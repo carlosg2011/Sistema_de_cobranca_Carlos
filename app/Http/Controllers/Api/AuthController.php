@@ -12,7 +12,17 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
-    
+
+      public function showLoginForm()
+    {
+        return view('auth.login');
+    }
+
+    public function showRegistrationForm()
+    {
+        return view('auth.register');
+    }
+
     public function register(Request $request)
     {
         $request->validate([
@@ -38,34 +48,34 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-         $validator = Validator::make($request->all(), [
-        'email'    => 'required|email',
-        'password' => 'required|string',
-    ]);
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'errors' => $validator->errors()
-        ], 422);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-    $user = User::where('email', $request->email)->first();
-
-
-     if (!$user) {
-        return response()->json([
-            'error' => 'E-mail incorreto ou não cadastrado.'
-        ], 404);
-    }
-
-    if (!Hash::check($request->password, $user->password)) {
-        return response()->json([
-            'error' => 'Senha inválida.'
-        ], 401);
-    }
+        $user = User::where('email', $request->email)->first();
 
 
-    $token = JWTAuth::fromUser($user);
+        if (!$user) {
+            return response()->json([
+                'error' => 'E-mail incorreto ou não cadastrado.'
+            ], 404);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'error' => 'Senha inválida.'
+            ], 401);
+        }
+
+
+        $token = JWTAuth::fromUser($user);
 
         return response()->json([
             'access_token' => $token,
@@ -74,4 +84,19 @@ class AuthController extends Controller
         ]);
     }
 
+
+    public function logout(Request $request)
+    {
+        try {
+            JWTAuth::invalidate(JWTAuth::getToken());
+            return response()->json(['message' => 'Logout efetuado com sucesso']);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json(['error' => 'Falha ao fazer logout, token inválido'], 500);
+        }
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
+    }
 }
