@@ -23,12 +23,30 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
+
+
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
+             'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|unique:users',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[@$!%*#?&]/',
+            ],
+        ], [
+            'email.unique'       => 'Email já cadastrado.',
+            'email.email'        => 'Insira um e-mail válido.',
+            'password.required'  => 'A senha é obrigatória.',
+            'password.min'       => 'A senha deve ter no mínimo 8 caracteres.',
+            'password.confirmed' => 'As senhas não coincidem.',
+            'password.regex'     => 'A senha deve conter: maiúscula, minúscula, número e caractere especial.',
         ]);
 
         $user = User::create([

@@ -6,6 +6,7 @@ use App\Models\Charge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Carbon;
 
 class ChargeController extends Controller
 {
@@ -13,7 +14,7 @@ class ChargeController extends Controller
     public function index()
     {
        $charges = Charge::where('user_id', Auth::id())->get();
-        return response()->json($charges); 
+        return response()->json($charges);
     }
 
     public function create()
@@ -29,24 +30,26 @@ class ChargeController extends Controller
             'due_date' => 'required|date',
         ]);
 
+        $dataVencimento = Carbon::parse($validated['due_date'])->setTimeFrom(Carbon::now('America/Sao_Paulo'));
+
         $charge = Charge::create([
             'user_id' => Auth::id(),
             'amount' => $validated['amount'],
-            'due_date' => $validated['due_date'],
+            'due_date' => $dataVencimento,
             'status' => 'pending',
         ]);
 
          return response()->json($charge, 201);
     }
 
-    public function show(Charge $charge, $id)
-    {
-         $charge = Charge::where('id', $id)
-                        ->where('user_id', Auth::id())
-                        ->firstOrFail();
+    public function show($id)
+{
+    $charge = Charge::where('id', $id)
+                    ->where('user_id', Auth::id())
+                    ->firstOrFail();
 
-        return response()->json($charge);
-    }
+    return response()->json($charge);
+}
 
 
     public function edit(Charge $charge)
@@ -79,6 +82,16 @@ class ChargeController extends Controller
 
     public function destroy(Charge $charge, $id)
     {
-        //
+        $charge = Charge::where('id', $id)
+                        ->where('user_id', Auth::id())
+                        ->firstOrFail();
+
+        if ($charge->status !== 'pending') {
+            return response()->json(['error' => 'Apenas cobranças pendentes podem ser excluídas.'], 400);
+        }
+
+        $charge->delete();
+
+        return response()->json(null, 204);
     }
 }
